@@ -18,13 +18,14 @@ import (
 // 7 - Low precedence operator (+, -)
 // 8 - Medium precedence operator (*, /)
 // 9 - High precedence operator (^)
+// 10 - Equals
 
 type token struct {
 	Type  uint8
 	Value string
 }
 
-var precedence = []uint8{7, 8, 9}
+var precedence = []uint8{EQUALS, OP_LOW, OP_MED, OP_HIGH}
 
 func Parse(s string) (*Expression, error) {
 	s = strings.ToLower(s)
@@ -34,9 +35,9 @@ func Parse(s string) (*Expression, error) {
 	// Check that brackets are balanced:
 	depth := 0
 	for _, token := range tokens {
-		if token.Type == 4 {
+		if token.Type == PAREN_OPEN {
 			depth++
-		} else if token.Type == 5 {
+		} else if token.Type == PAREN_CLOSE {
 			depth--
 		}
 	}
@@ -61,42 +62,42 @@ func parseTokens(tokens []token) (*Expression, error) {
 
 	// Just 1 token is probably a value on its own
 	if len(tokens) == 1 {
-		return &Expression{tokens[0].Value, nil, nil}, nil
+		return &Expression{tokens[0].Value, tokens[0].Type, nil, nil}, nil
 	}
 
 	// search for operators outside of brackets
 	for _, op := range precedence {
 		depth := 0
 		for i := len(tokens) - 1; i >= 0; i-- {
-      skip := false
+			skip := false
 
-			if tokens[i].Type == 5 {
+			if tokens[i].Type == PAREN_CLOSE {
 				depth++
-			} else if tokens[i].Type == 4 {
+			} else if tokens[i].Type == PAREN_OPEN {
 				depth--
 			}
 
-      // Handle implicit multiplication:
-      if op == 8 && i != 0 {
-        prevType := tokens[i-1].Type
-        currentType := tokens[i].Type
+			// Handle implicit multiplication:
+			if op == 8 && i != 0 {
+				prevType := tokens[i-1].Type
+				currentType := tokens[i].Type
 
-        switch prevType {
-        case 0, 2, 3, 5: // implicit multiplication
-          switch currentType {
-          case 0, 1, 2, 3, 4:
-            left, err := parseTokens(tokens[:i])
-            if err != nil {
-              return nil, err
-            }
-            right, err := parseTokens(tokens[i:])
-            if err != nil {
-              return nil, err
-            }
-            return &Expression{"*", left, right}, nil
-          }
-        }
-      }
+				switch prevType {
+				case NUMBER, CONSTANT, VARIABLE, PAREN_CLOSE: // implicit multiplication
+					switch currentType {
+					case NUMBER, FUNC_PREFIX, CONSTANT, VARIABLE, PAREN_OPEN:
+						left, err := parseTokens(tokens[:i])
+						if err != nil {
+							return nil, err
+						}
+						right, err := parseTokens(tokens[i:])
+						if err != nil {
+							return nil, err
+						}
+						return &Expression{"*", OP_MED, left, right}, nil
+					}
+				}
+			}
 
 			// Process operators
 			if (tokens[i].Type == op) && (depth == 0) {
@@ -104,12 +105,12 @@ func parseTokens(tokens []token) (*Expression, error) {
 					left *Expression
 					err  error
 				)
-        // Handle unary '-'
-				if (op == 7) && (tokens[i].Value == "-") && ((i == 0) || (tokens[i-1].Type >= 7))  {
-          left = &Expression{"0", nil, nil}
-          if i != 0 {
-            skip = true
-          }
+				// Handle unary '-'
+				if (op == 7) && (tokens[i].Value == "-") && ((i == 0) || (tokens[i-1].Type >= 7)) {
+					left = &Expression{"0", NUMBER, nil, nil}
+					if i != 0 {
+						skip = true
+					}
 				} else {
 					left, err = parseTokens(tokens[:i])
 					if err != nil {
@@ -117,40 +118,40 @@ func parseTokens(tokens []token) (*Expression, error) {
 					}
 				}
 
-        if !skip {
-  				right, err := parseTokens(tokens[i+1:])
-  				if err != nil {
-  					return nil, err
-  				}
+				if !skip {
+					right, err := parseTokens(tokens[i+1:])
+					if err != nil {
+						return nil, err
+					}
 
-  				return &Expression{tokens[i].Value, left, right}, nil
-  			}
-      }
+					return &Expression{tokens[i].Value, tokens[i].Type, left, right}, nil
+				}
+			}
 		}
 	}
 
-  // prefix & postfix functions
-  for i := 1; i < len(tokens); i++ {
-    currentType := tokens[i].Type
-    prevType := tokens[i-1].Type
+	// prefix & postfix functions
+	for i := 1; i < len(tokens); i++ {
+		currentType := tokens[i].Type
+		prevType := tokens[i-1].Type
 
-    if prevType == 1 {
-      left, err := parseTokens(tokens[i:])
-      if err != nil {
-        return nil, err
-      }
-      return &Expression{tokens[i-1].Value, left, nil}, nil
-    }
+		if prevType == FUNC_PREFIX {
+			left, err := parseTokens(tokens[i:])
+			if err != nil {
+				return nil, err
+			}
+			return &Expression{tokens[i-1].Value, prevType, left, nil}, nil
+		}
 
-    // postfix functions:
-    if currentType == 6 {
-      left, err := parseTokens(tokens[:i])
-      if err != nil {
-        return nil, err
-      }
-      return &Expression{tokens[i].Value, left, nil}, nil
-    }
-  }
+		// postfix functions:
+		if currentType == FUNC_POSTFIX {
+			left, err := parseTokens(tokens[:i])
+			if err != nil {
+				return nil, err
+			}
+			return &Expression{tokens[i].Value, currentType, left, nil}, nil
+		}
+	}
 
 	return nil, errors.New("Couldn't parse tokens")
 }
@@ -162,9 +163,9 @@ func debracketise(tokens []token) []token {
 	depth := 0
 	hitsZero := false
 	for i, op := range tokens {
-		if op.Type == 4 {
+		if op.Type == PAREN_OPEN {
 			depth++
-		} else if op.Type == 5 {
+		} else if op.Type == PAREN_CLOSE {
 			depth--
 		}
 
@@ -183,7 +184,7 @@ func debracketise(tokens []token) []token {
 func tokenize(s string) []token {
 	matchers := []*regexp.Regexp{
 		regexp.MustCompile("([0-9]+)(\\.[0-9]+)?(e[0-9]+)?"),
-		regexp.MustCompile("((a(rc?)?)?(sin|cos|tan|sec|csc|cosec|cot)h?)|ln|log"),
+		regexp.MustCompile("((a(rc?)?)?(sin|cos|tan|sec|csc|cosec|cot)h?)|ln|log|sqrt"),
 		regexp.MustCompile("e|pi"),
 		regexp.MustCompile("[a-z]"),
 		regexp.MustCompile("\\("),
@@ -191,7 +192,8 @@ func tokenize(s string) []token {
 		regexp.MustCompile("!"),
 		regexp.MustCompile("[+-]"),
 		regexp.MustCompile("[*/]"),
-		regexp.MustCompile("[\\^]")}
+		regexp.MustCompile("\\^"),
+    regexp.MustCompile("=")}
 
 	// order shows the order that tokens come in. -1 means that spot
 	// is empty, any other shows its position in the tokens array

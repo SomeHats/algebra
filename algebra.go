@@ -19,7 +19,7 @@ func main() {
 		if err == nil {
 			fmt.Println(exp)
 
-			fmt.Println("d/dx of expression: ", exp.Differentiate("x"))
+			//fmt.Println("d/dx of expression: ", exp.Differentiate("x"))
 		} else {
 			fmt.Println("Error: ", err)
 		}

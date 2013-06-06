@@ -4,8 +4,23 @@ import (
 	"strings"
 )
 
+const (
+	NUMBER       uint8 = 0
+	FUNC_PREFIX        = 1
+	CONSTANT           = 2
+	VARIABLE           = 3
+	PAREN_OPEN         = 4
+	PAREN_CLOSE        = 5
+	FUNC_POSTFIX       = 6
+	OP_LOW             = 7
+	OP_MED             = 8
+	OP_HIGH            = 9
+	EQUALS						 = 10
+)
+
 type Expression struct {
 	Op    string
+	Type  uint8
 	Left  *Expression
 	Right *Expression
 }
