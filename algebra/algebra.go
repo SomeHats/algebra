@@ -15,7 +15,7 @@ const (
 	OP_LOW             = 7
 	OP_MED             = 8
 	OP_HIGH            = 9
-	EQUALS						 = 10
+	EQUALS             = 10
 )
 
 type Expression struct {

@@ -78,7 +78,7 @@ func parseTokens(tokens []token) (*Expression, error) {
 			}
 
 			// Handle implicit multiplication:
-			if op == 8 && i != 0 {
+			if op == 8 && i != 0 && depth == 0 {
 				prevType := tokens[i-1].Type
 				currentType := tokens[i].Type
 
@@ -193,7 +193,7 @@ func tokenize(s string) []token {
 		regexp.MustCompile("[+-]"),
 		regexp.MustCompile("[*/]"),
 		regexp.MustCompile("\\^"),
-    regexp.MustCompile("=")}
+		regexp.MustCompile("=")}
 
 	// order shows the order that tokens come in. -1 means that spot
 	// is empty, any other shows its position in the tokens array
