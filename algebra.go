@@ -23,6 +23,7 @@ func main() {
 
 			if err == nil {
 				fmt.Println("d/dx of expression: \n", exp)
+				fmt.Println("Simplified: \n", exp.Simplify())
 			} else {
 				fmt.Println("Error: ", err)
 			}

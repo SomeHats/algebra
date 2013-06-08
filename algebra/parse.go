@@ -183,8 +183,8 @@ func debracketise(tokens []token) []token {
 
 func tokenize(s string) []token {
 	matchers := []*regexp.Regexp{
-		regexp.MustCompile("([0-9]+)(\\.[0-9]+)?(e[0-9]+)?"),
-		regexp.MustCompile("((a(rc?)?)?(sin|cos|tan|sec|csc|cosec|cot)h?)|ln|log|sqrt"),
+		regexp.MustCompile("([0-9]+)(\\.[0-9]+)?(e-?[0-9]+)?"),
+		regexp.MustCompile("((a(rc?)?)?(cosec|sin|cos|tan|sec|csc|cot)h?)|ln|log|sqrt"),
 		regexp.MustCompile("e|pi"),
 		regexp.MustCompile("[a-z]"),
 		regexp.MustCompile("\\("),
