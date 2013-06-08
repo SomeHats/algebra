@@ -47,3 +47,18 @@ func (e *Expression) String() string {
 
 	return out
 }
+
+func (e *Expression) UnTree() string {
+	switch e.Type {
+	case NUMBER, VARIABLE, CONSTANT, EQUALS:
+		return e.Op
+
+	case OP_LOW, OP_MED, OP_HIGH:
+		return "(" + e.Left.UnTree() + " " + e.Op + " " + e.Right.UnTree() + ")"
+
+	case FUNC_PREFIX:
+		return e.Op + "(" + e.Left.UnTree() + ")"
+	}
+
+	return "CAN'T UNTREE: " + e.Op
+}
