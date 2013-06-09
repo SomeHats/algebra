@@ -86,6 +86,14 @@ func (exp *Expression) IsConstant() bool {
 
 func (exp *Expression) GetConstantTree() *Expression {
   if exp.Left == nil || exp.Right == nil {
+    if exp.Type == NUMBER {
+      n, err := big.NewRat(1, 1).SetString(exp.Op)
+      if !err {
+        panic("Can't parse number: " + exp.Op)
+      }
+
+      return ratToExp(n)
+    }
     return exp
   }
 
@@ -96,32 +104,59 @@ func (exp *Expression) GetConstantTree() *Expression {
   right := exp.Right
 
   op := exp.Op
+  opType := exp.Type
 
-  switch op {
-    case "+", "-":
+  switch opType {
+    case OP_LOW, OP_MED, OP_HIGH:
       if left.Type == NUMBER && right.Type == NUMBER {
-        if isInt(left.Op) && isInt(right.Op) {
-          n1, err := big.NewInt(0).SetString(left.Op, 10)
-          if !err {
-            panic("Can't parse int: " + left.Op)
-          }
-          n2, err := big.NewInt(0).SetString(right.Op, 10)
-          if !err {
-            panic("Can't parse int: " + right.Op)
-          }
-
-          if op == "+" {
-            n1.Add(n1, n2)
-          } else {
-            n1.Sub(n1, n2)
-          }
-
-          return &Expression{n1.String(), NUMBER, nil, nil}
+        n1, err := big.NewRat(1, 1).SetString(left.Op)
+        if !err {
+          panic("Can't parse number: " + left.Op)
         }
+        n2, err := big.NewRat(1, 1).SetString(right.Op)
+        if !err {
+          panic("Can't parse number: " + left.Op)
+        }
+
+        switch op {
+          case "+":
+            n1.Add(n1, n2)
+
+          case "-":
+            n1.Sub(n1, n2)
+
+          case "*":
+            n1.Mul(n1, n2)
+
+          case "/":
+            n1.Quo(n1, n2)
+
+          case "^":
+            if n2.IsInt() {
+              n := n2.Num()
+              a := n1.Num()
+              b := n1.Denom()
+
+              n1.SetFrac(a.Exp(a, n, big.NewInt(0)), b.Exp(b, n, big.NewInt(0)))
+            } else {
+              return exp
+            }
+        }
+
+        return ratToExp(n1)
       }
   }
 
   return exp
+}
+
+func ratToExp(n *big.Rat) *Expression {
+  if n.IsInt() {
+    return &Expression{n.Num().String(), NUMBER, nil, nil}
+  }
+  return  &Expression{"/", OP_MED,
+            &Expression{n.Num().String(), NUMBER, nil, nil},
+            &Expression{n.Denom().String(), NUMBER, nil, nil}}
 }
 
 func isInt (s string) bool {

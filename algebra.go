@@ -17,16 +17,22 @@ func main() {
 		fmt.Println("Expression tree:")
 		exp, err := algebra.Parse(expStr)
 		if err == nil {
-			fmt.Println(exp)
+			fmt.Println(exp.UnTree())
+
+			//fmt.Println("Simplified:")
+			//exp = exp.Simplify()
+			//fmt.Println(exp)
+			//fmt.Println(exp.UnTree())
 
 			exp, err := exp.Differentiate("x")
 
 			if err == nil {
 				fmt.Println("d/dx of expression: \n", exp)
-				fmt.Println("Simplified: \n", exp.Simplify())
+				fmt.Println("Simplified: \n", exp.Simplify().UnTree())
 			} else {
 				fmt.Println("Error: ", err)
 			}
+
 		} else {
 			fmt.Println("Error: ", err)
 		}
