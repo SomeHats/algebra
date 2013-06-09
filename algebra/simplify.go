@@ -6,6 +6,7 @@ import (
 )
 
 func (exp *Expression) Simplify() *Expression {
+  // simplify left & right, if defined
   if exp.Left != nil {
     exp.Left = exp.Left.Simplify()
   }
@@ -13,6 +14,7 @@ func (exp *Expression) Simplify() *Expression {
     exp.Right = exp.Right.Simplify()
   }
 
+  // If this is a constant, try and express that constant in as few values as possible
   if exp.IsConstant() {
     exp = exp.GetConstantTree()
   }
@@ -58,6 +60,11 @@ func (exp *Expression) Simplify() *Expression {
     case "^":
       if right.Type == NUMBER && right.Op == "1" {
         exp = left
+      }
+
+    case "ln":
+      if left.Type == CONSTANT && left.Op == "e" {
+        exp = &Expression{"1", NUMBER, nil, nil}
       }
   }
 
@@ -108,15 +115,9 @@ func (exp *Expression) GetConstantTree() *Expression {
 
   switch opType {
     case OP_LOW, OP_MED, OP_HIGH:
-      if left.Type == NUMBER && right.Type == NUMBER {
-        n1, err := big.NewRat(1, 1).SetString(left.Op)
-        if !err {
-          panic("Can't parse number: " + left.Op)
-        }
-        n2, err := big.NewRat(1, 1).SetString(right.Op)
-        if !err {
-          panic("Can't parse number: " + left.Op)
-        }
+      if (left.Type == NUMBER || left.isFrac()) && (right.Type == NUMBER || right.isFrac()) {
+        n1 := left.getFrac()
+        n2 := right.getFrac()
 
         switch op {
           case "+":
@@ -161,4 +162,30 @@ func ratToExp(n *big.Rat) *Expression {
 
 func isInt (s string) bool {
   return !strings.Contains(s, ".")
+}
+
+func (e *Expression) isFrac() bool {
+  return e.Op == "/" && e.Left.Type == NUMBER && e.Right.Type == NUMBER
+}
+
+func (e *Expression) getFrac() *big.Rat {
+  if e.isFrac() {
+    n1 := e.Left.getFrac()
+    n2 := e.Right.getFrac()
+
+    return n1.Quo(n1, n2)
+  }
+
+  if e.Type == NUMBER {
+    n, err := big.NewRat(1, 1).SetString(e.Op)
+    if !err {
+      panic("Can't parse number: " + e.Op)
+    }
+
+    return n
+  }
+
+  panic("getFrac passed non fraction/number: " + e.Op)
+
+  return nil
 }

@@ -19,7 +19,7 @@ func main() {
 		if err == nil {
 			fmt.Println(exp.UnTree())
 
-			//fmt.Println("Simplified:")
+			fmt.Println("Simplified:")
 			//exp = exp.Simplify()
 			//fmt.Println(exp)
 			//fmt.Println(exp.UnTree())
