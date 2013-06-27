@@ -17,7 +17,8 @@ func main() {
 		fmt.Println("Expression tree:")
 		exp, err := algebra.Parse(expStr)
 		if err == nil {
-			fmt.Println(exp.UnTree())
+			fmt.Println(exp)
+			//fmt.Println(exp.ToLatex())
 
 			//fmt.Println("Simplified:")
 			//exp = exp.Simplify()

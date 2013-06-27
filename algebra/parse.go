@@ -240,3 +240,116 @@ func tokenize(s string) []token {
 
 	return out
 }
+
+func (e *Expression) ToLatex() string {
+	opType, op := e.Type, e.Op
+
+	switch opType {
+	case NUMBER, CONSTANT, VARIABLE:
+		if op == "pi" {
+			return " \\pi "
+		}
+
+		return op
+
+	case FUNC_PREFIX:
+		var arg string
+		switch e.Left.Type {
+			case NUMBER, CONSTANT, VARIABLE, FUNC_PREFIX:
+				arg = " " + e.Left.ToLatex() + " "
+
+			default:
+				arg = " \\left ( " + e.Left.ToLatex() + " \\right ) "
+		}
+		switch op{
+			case "ln", "sin", "cos", "tan", "sec", "csc", "cot",
+			"sinh", "cosh", "tanh", "sech", "csch", "coth":
+				return " \\" + op + arg
+
+			case "cosec":
+				return " \\csc" + arg
+
+			case "asin", "arsin", "arcsin":
+				return " \\arcsin" + arg
+
+			case "acos", "arcos", "arccos":
+				return " \\arccos" + arg
+
+			case "atan", "artan", "arctan":
+				return " \\arctan" + arg
+
+			case "asec", "arsec", "arcsec":
+				return " \\arcsec" + arg
+
+			case "acsc", "arcsc", "arccsc", "acosec", "arcosec", "arccosec":
+				return " \\arccsc" + arg
+
+			case "acot", "arcot", "arccot":
+				return " \\arccot" + arg
+
+			case "log":
+				return " \\log_{10} " + arg
+
+			case "sqrt":
+				return " \\sqrt{" + e.Left.ToLatex() + "} "
+		}
+
+	case FUNC_POSTFIX:
+		var arg string
+		switch e.Left.Type {
+			case NUMBER, CONSTANT, VARIABLE, FUNC_PREFIX:
+				arg = " " + e.Left.ToLatex() + " "
+
+			default:
+				arg = " \\left ( " + e.Left.ToLatex() + " \\right ) "
+		}
+
+		return arg + op + " "
+
+	case OP_LOW, OP_MED, OP_HIGH:
+		var left, right string
+
+		if op == "/" {
+			left = " " + e.Left.ToLatex() + " "
+			right = " " + e.Right.ToLatex() + " "
+			return " \\frac{" + left + "}{" + right + "}"
+		}
+
+		switch e.Left.Type {
+			case NUMBER, CONSTANT, VARIABLE, FUNC_PREFIX:
+				left = " " + e.Left.ToLatex() + " "
+
+			case OP_LOW, OP_MED, OP_HIGH:
+				if e.Left.Type < opType {
+					left = " \\left ( " + e.Left.ToLatex() + " \\right ) "
+				} else {
+					left = " " + e.Left.ToLatex() + " "
+				}
+
+			default:
+				left = " \\left ( " + e.Left.ToLatex() + " \\right ) "
+		}
+		switch e.Right.Type {
+			case NUMBER, CONSTANT, VARIABLE, FUNC_PREFIX:
+				right = " " + e.Right.ToLatex() + " "
+
+			case OP_LOW, OP_MED, OP_HIGH:
+				if e.Right.Type < opType {
+					right = " \\left ( " + e.Right.ToLatex() + " \\right ) "
+				} else {
+					right = " " + e.Right.ToLatex() + " "
+				}
+
+			default:
+				right = " \\left ( " + e.Right.ToLatex() + " \\right ) "
+		}
+
+		if op == "*" {
+			op = ""
+		}
+
+		return left + op + right
+	}
+
+	return "MISSING: " + op
+}
