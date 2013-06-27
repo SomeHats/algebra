@@ -20,7 +20,7 @@ func main() {
 			fmt.Println(exp)
 			//fmt.Println(exp.ToLatex())
 
-			//fmt.Println("Simplified:")
+			fmt.Println("Simplified:")
 			//exp = exp.Simplify()
 			//fmt.Println(exp)
 			//fmt.Println(exp.UnTree())
